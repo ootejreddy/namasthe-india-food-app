@@ -1,16 +1,22 @@
-import restuarantData from "../utils/mockData";
-import RestaurantCard from "./RestaurantCard";
-import { useState, useEffect } from "react";
+import RestaurantCard, { withPromotedLabel } from "./RestaurantCard";
+import { useState, useEffect, useContext } from "react";
 import Shimmer from "./Shimmer";
 import { Link } from "react-router-dom";
 import { RES_LIST_URL } from "../utils/constants";
+import axios from "axios";
+import useNetworkStatus from "../utils/useNetworkStatus";
+import UserContext from "../utils/UserContext";
 
 const Body = () => {
   const [resList, setResList] = useState([]);
-  console.log(`type of resList is ${typeof resList}`);
+
+  const { loggedInUser, setUserName } = useContext(UserContext);
+  // console.log(`type of resList is ${typeof resList}`);
+
   //* we are using another state variable because not loose the main state variable data
   const [filteredResList, setfilteredResList] = useState([]);
   const [searchText, setsearchText] = useState("");
+  const ResCardPromoted = withPromotedLabel(RestaurantCard);
   useEffect(() => {
     console.log("useEffect called");
     fetchData();
@@ -21,22 +27,17 @@ const Body = () => {
     * Here we are using swiggy API
     ! This API address might change in future need to update the address if necessary
     */
-    const data = await fetch(RES_LIST_URL);
+    const response = await axios.get(RES_LIST_URL);
 
-    console.log(`The  data is ${JSON.stringify(data)}`);
+    console.log(`The  response is ${response.data}`);
     //! The json data changes at anytime make sure you recheck the json data if any error occurs
-    const json = await data.json();
 
-    console.log(` The json data is: 
-      ${json?.data?.cards[2]?.card?.card?.gridElements?.infoWithStyle?.restaurants}`);
+    // console.log(` The json data is:
+    //   ${JSON.stringify(response.data)}`);
 
     //* optional chaining
-    setResList(
-      json?.data?.cards[2]?.card?.card?.gridElements?.infoWithStyle?.restaurants
-    );
-    setfilteredResList(
-      json?.data?.cards[2]?.card?.card?.gridElements?.infoWithStyle?.restaurants
-    );
+    setResList(response.data);
+    setfilteredResList(response.data);
     console.log(
       `both setResList and setfilteredResList are triggered because of useEffectHook`
     );
@@ -48,6 +49,11 @@ const Body = () => {
    * here we are using shimmer UI
    * To create a good user experience we are creating dummy cards until the actual data renders from the api call
    */
+
+  const onlineStatus = useNetworkStatus();
+  if (onlineStatus === false) {
+    return <h1>you're offline ❌ please check your connection</h1>;
+  }
 
   if (resList.length === 0) {
     return <Shimmer />;
@@ -61,10 +67,7 @@ const Body = () => {
           //* Implementation of search functionality
         }
         <div className="m-4 p-4 ">
-          <label htmlFor="Search" class="sr-only">
-            {" "}
-            Search{" "}
-          </label>
+          <label htmlFor="Search"> Search </label>
           <input
             // className="border border-solid border-black rounded-lg h-10 w-80"
             id="Search"
@@ -107,15 +110,30 @@ const Body = () => {
             Top Rated Restaurants
           </button>
         </div>
+
+        <div>
+          <label htmlFor="userName">userName:</label>
+          <input
+            type="text"
+            id="userName"
+            value={loggedInUser}
+            className=" border relative border-solid w-80 rounded-lg border-gray-400 py-2.5 pe-10 shadow-sm sm:text-sm pl-4 ml-3"
+            onChange={(event) => setUserName(event.target.value)}
+          ></input>
+        </div>
       </div>
       <div className="flex flex-wrap">
         {filteredResList.map((restaurant) => {
           return (
             <Link
               key={restaurant?.info.id}
-              to={`/restaurants/${restaurant?.info.id}`}
+              to={`/restaurants/${restaurant?.info?.id}`}
             >
-              <RestaurantCard resData={restaurant?.info} />{" "}
+              {restaurant?.info?.promoted ? (
+                <ResCardPromoted resData={restaurant.info} />
+              ) : (
+                <RestaurantCard resData={restaurant.info} />
+              )}
             </Link>
           );
         })}

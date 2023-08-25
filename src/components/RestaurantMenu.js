@@ -1,59 +1,54 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { LOGO_URL, MENU_URL } from "../utils/constants";
+import { LOGO_URL } from "../utils/constants";
 import Shimmer from "./Shimmer";
+import useRestaurantMenu from "../utils/useRestaurantMenu";
+import RestaurantCategory from "./RestaurantCategory";
+import { useState } from "react";
 
 const RestaurantMenu = () => {
-  const [resInfo, setresInfo] = useState(null);
+  const [showIndex, setShowIndex] = useState(null);
+  //* The useParams will give resId as an object and we are destructuring the json.
   const { resId } = useParams();
-  useEffect(() => {
-    fetchMenu();
-  }, []);
-
-  /*
-   *The below has the individual restaurant information
-   */
-  const fetchMenu = async () => {
-    console.log(MENU_URL + resId);
-    try {
-      const data = await fetch(MENU_URL + resId);
-      const jsonData = await data.json();
-      // console.log(`The json data is ${jsonData}`);
-      console.log(jsonData.data);
-      setresInfo(jsonData.data);
-    } catch (err) {
-      console.log(`The error is: ${err}`);
-    }
-  };
-
+  const resInfo = useRestaurantMenu(resId);
   if (resInfo === null) {
+    // console.log(`The resInfo is: ${resInfo}`);
     return <Shimmer />;
   }
-
   const { name, id, costForTwoMessage, avgRating, uniqueId, cuisines } =
     resInfo?.cards[0]?.card?.card?.info;
-
   const { itemCards } =
     resInfo.cards[2].groupedCard.cardGroupMap.REGULAR?.cards[1].card?.card;
-
-  console.log(`The itemCards are: ${itemCards}`);
-
+  // console.log(
+  //   "the dataaa",
+  //   resInfo.cards[2].groupedCard.cardGroupMap.REGULAR?.cards
+  // );
+  const categories =
+    resInfo?.cards[2]?.groupedCard?.cardGroupMap?.REGULAR?.cards.filter(
+      (c) =>
+        c.card?.card?.["@type"] ===
+        "type.googleapis.com/swiggy.presentation.food.v2.ItemCategory"
+    );
+  // console.log("The categories are", categories);
+  // console.log(`The itemCards are: ${itemCards}`);
   return (
-    <div>
-      <h1 className="text-3xl">{name}</h1>
-      <h2>{costForTwoMessage}</h2>
-      <ul>cusines: {cuisines.join(", ")}</ul>
-      <h2 className="text-3xl">Menu Items:</h2>
-      <ul>
-        {itemCards &&
-          itemCards.map((item) => (
-            <li key={item?.card?.info?.id}>
-              {item?.card?.info?.name} {" Rs - "}
-              {item?.card?.info?.price / 100 ||
-                item?.card?.info?.defaultPrice / 100}{" "}
-            </li>
-          ))}
-      </ul>
+    <div className="text-center">
+      <h1 className="text-3xl text-center font-bold my-6">{name}</h1>
+      <p className="font-bold text-center my-6 text-xl">
+        {cuisines.join(",")} - {costForTwoMessage}
+      </p>
+      <div>
+        {categories.map((item, index) => (
+          //* this a controlled component
+          <RestaurantCategory
+            key={item.card?.card?.title}
+            data={item.card?.card}
+            showItems={index === showIndex && true}
+            setShowIndex={() => {
+              setShowIndex(index);
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 };
