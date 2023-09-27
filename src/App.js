@@ -8,6 +8,9 @@ import { useContext, useState, useEffect } from "react";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import RestaurantMenu from "./components/RestaurantMenu";
 import UserContext from "./utils/UserContext";
+import { Provider } from "react-redux";
+import appStore from "./utils/appStore";
+import Cart from "./components/Cart";
 
 const AppLayout = () => {
   const [userName, setUserName] = useState("Hashirama Senju");
@@ -20,13 +23,16 @@ const AppLayout = () => {
   // const { loggedInUser } = useContext(UserContext);
   return (
     <div className="app">
-      <UserContext.Provider value={{ loggedInUser: userName, setUserName }}>
-        <Header />
-        {/** The outlet is replaced with the children path
-         * If the user enters /about then outlet is replace with about component, so on..
-         */}
-        <Outlet />
-      </UserContext.Provider>
+      <Provider store={appStore}>
+        <UserContext.Provider value={{ loggedInUser: userName, setUserName }}>
+          <Header />
+          {/** The outlet is replaced with the children path
+           * If the user enters /about then outlet is replace with about component, so on..
+           */}
+
+          <Outlet />
+        </UserContext.Provider>
+      </Provider>
     </div>
   );
 };
@@ -48,6 +54,10 @@ const appRouter = createBrowserRouter([
       {
         path: `/restaurants/:resId`,
         element: <RestaurantMenu />,
+      },
+      {
+        path: `/cart`,
+        element: <Cart></Cart>,
       },
     ],
   },
